@@ -4,13 +4,40 @@ package app;
 import controller.RentarController;
 import model.Mobil;
 import model.Motor;
+import model.PenyewaanRepository;
+import model.PenyewaanRepositoryArrayList;
+import view.RentalView;
+import view.RentalViewCli;
+import view.StrukView;
+import view.StrukViewCli;
+import model.Kendaraan;
+import model.KendaraanFactory;
+import model.KendaraanFactoryDefault;
+import model.KendaraanRepository;
+import model.KendaraanRepositoryArrayList;
 //import model.Kendaraan;
 import model.Minibus;
 import model.MobilPremium;
 
+//[DPI] main adalah composition root satu satunya tempat yang mengenal kelas konkret 
+//      disinilah semua object dirakit lalu disuntiknan/deoendencies ke controller
+//      
 public class Main {
     public static void main(String[] args) {
-        RentarController controller = new RentarController();
+
+        KendaraanRepository kendaraanRepository = new KendaraanRepositoryArrayList();
+        PenyewaanRepository penyewaanRepository = new PenyewaanRepositoryArrayList();
+        KendaraanFactory kendaraanFactory = new KendaraanFactoryDefault();
+        RentalView view = new RentalViewCli();
+        StrukView strukView = new StrukViewCli();
+
+        RentarController controller = new RentarController(
+                kendaraanRepository,
+                penyewaanRepository,
+                view,
+                strukView,
+                kendaraanFactory
+        );
 
         // tambah data awall// data dummy
         controller.tambahDataAwal(new Mobil(

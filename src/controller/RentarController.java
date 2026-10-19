@@ -11,11 +11,26 @@ import model.Penyewaan;
 import java.util.List;
 import model.KendaraanFactory;
 
+//[SRP] satu tanggung jawab: mengatur alur aplikasi
+// menerima pilihan dari view, validasi, memanggil model, mengirim hasil ke view
+//tidak menyimpan data sendiri, tidak memformat struk, tidak menghitung tarif
+//[DIP] controller 
 public class RentarController {
-    private final KendaraanRepository kendaraanRepo = new KendaraanRepository();
-    private final PenyewaanRepository penyewaanRepo = new PenyewaanRepository();
-    private final RentalView view = new RentalView();
-    private final StrukView strukView = new StrukView();
+    // [DIP] pelanggaran DIP
+    private final KendaraanRepository kendaraanRepo;
+    private final PenyewaanRepository penyewaanRepo;
+    private final RentalView view;
+    private final StrukView strukView;
+    private final KendaraanFactory kendaraanFactory;
+
+    public RentarController(KendaraanRepository kendaraanRepository, PenyewaanRepository penyewaanRepository,
+            RentalView view, StrukView strukView, KendaraanFactory kendaraanFactory) {
+        this.kendaraanRepo = kendaraanRepository;
+        this.penyewaanRepo = penyewaanRepository;
+        this.view = view;
+        this.strukView = strukView;
+        this.kendaraanFactory = kendaraanFactory;
+    };
 
     public void tambahDataAwal(Kendaraan kendaraan) {
         kendaraanRepo.tambah(kendaraan);
@@ -50,8 +65,13 @@ public class RentarController {
 
         String merk = view.bacaTeks("Merk");
         // [OCP] Daftar jenis diambil dari Factory, bukan ditulis manual di Controller.
-        String jenis = view.bacaTeks("Jenis (" + String.join("/", KendaraanFactory.JENIS) + ")").toUpperCase();
-        if (!List.of(KendaraanFactory.JENIS).contains(jenis)) {
+        String jenis = view.bacaTeks("Jenis (" + String.join("/", kendaraanFactory.daftarJenis()) + ")").toUpperCase();
+        // if (!List.of(kendaraanFactory.daftarJenis()).contains(jenis)) {
+        //     view.tampilPesan("Jenis tidak dikenal.");
+        //     return;
+        // }
+
+        if (!kendaraanFactory.daftarJenis().contains(jenis)) {
             view.tampilPesan("Jenis tidak dikenal.");
             return;
         }
@@ -62,7 +82,7 @@ public class RentarController {
             return;
         }
 
-        kendaraanRepo.tambah(KendaraanFactory.buat(jenis, plat, merk, tarif));
+        kendaraanRepo.tambah(kendaraanFactory.buat(jenis, plat, merk, tarif));
         view.tampilPesan("Kendaraan berhasil ditambahkan.");
     }
 
@@ -78,22 +98,21 @@ public class RentarController {
         if (kendaraan instanceof WajibSIM WajibSIM) {
             String sim = view.bacaTeks("Golongan SIM penyewa");
             if (!sim.equalsIgnoreCase(WajibSIM.getGolonganSIM())) {
-                view.tampilPesan(kendaraan.getMerk()+"Wajib SIM " + WajibSIM.getGolonganSIM()+".");
+                view.tampilPesan(kendaraan.getMerk() + "Wajib SIM " + WajibSIM.getGolonganSIM() + ".");
                 return;
             }
-            
+
         }
 
         int hari = (int) view.bacaAngka("Lama sewa (hari)");
 
-
         if (kendaraan instanceof WajibJaminan wajibJaminan) {
             if (!view.konfirmasiUangJaminan(wajibJaminan.getUangJaminan())) {
                 view.tampilPesan("Penyewaan dibatalkan");
-                return ;
-                
+                return;
+
             }
-            
+
         }
 
         // [LSP] Validasi memakai kontrak kelas induk, BUKAN instanceof MobilPremium.
